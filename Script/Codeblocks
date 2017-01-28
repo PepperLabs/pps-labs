@@ -1,0 +1,8 @@
+metadata{
+		windows-startup-script-ps1 = <<SCRIPT
+		$url = "https://downloads.sourceforge.net/project/codeblocks/Binaries/16.01/Windows/codeblocks-16.01mingw-setup.exe?r=http%3A%2F%2Fwww.codeblocks.org%2Fdownloads%2F26&ts=1485526370&use_mirror=kent"
+		$output = "c:\codeblocks.exe"
+		(New-Object System.Net.WebClient).DownloadFile($url, $output)
+		C:\codeblocks.exe /S
+		SCRIPT
+}
