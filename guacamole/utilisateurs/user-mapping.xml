@@ -1,0 +1,11 @@
+<user-mapping>
+    <authorize username="username1" password="password1">
+         <!-- bloc machine de user1 ici -->
+    </authorize>
+    <authorize username="username2" password="password2">
+         <!-- bloc machine de user2 ici -->
+    </authorize>
+    <authorize username="usernameN" password="password3">
+         <!-- bloc machine de userN ici -->
+    </authorize>
+</user-mapping>
