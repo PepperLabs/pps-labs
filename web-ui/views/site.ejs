@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="fr" ng-app="uploadsApp">
+<html lang="fr" ng-app="app">
 <head>
   <meta charset="utf-8">
 
@@ -54,18 +54,42 @@
   <script src="fullcalendar/dist/gcal.js"></script>
   <!-- </libs> -->
   <!-- <app-components> -->
-  <script src="javascripts/services.js"></script>
   <script src="javascripts/app.js"></script>
   <script src="javascripts/controllers.js"></script>
   <script src="javascripts/directives.js"></script>
   <script src="/javascripts/user_module/userModule.js"></script>
-  <script src="/javascripts/user_module/userControllers.js"></script>
   <script src="/javascripts/background.js"></script>
   <!-- </app-components> -->
 </head>
 <body ng-controller='MainCtrl' >
   <toast class="server-info" id="info" ng-show="info" ng-class="{'bg-success': infoGood, 'bg-danger': !infoGood}" toast-info="info"></toast>
-  <section ui-view></section>
-  <!--<link href='//fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,600,900' rel='stylesheet' type='text/css'>-->
+  <section>
+    <nav id="upperbar">
+        <div class="general-menu">
+            <a href="/#/main/overview" class="item accueil"><span>Accueil</span></a>
+            <a ui-sref="main.labs()" class="item projects" ng-class="{'selected': view=='labs'}"><span>Calendrier</span></a>
+
+        </div>
+        <div class="userinfo">
+            <div class="inner">
+                <img class="pic" src="/img/user_placeholder.png"/>
+                <div class="text text-lg">
+                    <div>BONJOUR, <strong>{{user.firstname}} {{user.lastname}}</strong></div>
+                    <span class="role">UTILISATEUR</span>
+                </div>
+                <div class="text text-sm">
+                    <div>Hi, <strong>{{user.firstname}}</strong></div>
+                    <span class="role">UTILISATEUR</span>
+                </div>
+            </div>
+            <button class="logout" ng-click="$parent.logout()">
+            </button>
+        </div>
+
+    </nav>
+    <section ui-view></section>
+    <div id='dragElem' style='z-index: 10000'></div>
+  </section>
 </body>
 </html>
+
