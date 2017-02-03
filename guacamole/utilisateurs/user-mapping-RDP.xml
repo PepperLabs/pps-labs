@@ -1,0 +1,14 @@
+<connection name="window_RDP">                                                  <!-- nom de la machine --> 
+                <protocol>rdp</protocol>                                        <!-- Protocol-->
+                <param name="hostname">10.142.0.5</param>                       <!-- privilegier IP interne-->
+                <param name="port">3389</param>                                 <!-- Pas utile rdp par defaut en 3389-->
+                <param name="username">fbbere</param>				
+                <param name="password"><![CDATA[rm?-]c:PZYYu&Q>]]></param> 	<!-- MdP echappe :  <![CDATA[Mdp]]> -->
+                <param name="ignore-cert">true</param>   		        <!-- certificat accepté -->
+                <param name="security">nla</param>       		        <!-- activer NLA -->
+                <param name="enable-drive">true</param>                         <!-- activer le dossier pour upload et download de fichier -->
+                <param name="drive-path">/tmp/yolo</param>                      <!-- renseigner un dossier sinon c’est en / -->
+                <param name="create-drive-path">true</param>                    <!-- permet de le créer si absent -->
+                <param name="server-layout">fr-fr-azerty</param>
+                <param name="color-depth">16</param>
+        </connection>

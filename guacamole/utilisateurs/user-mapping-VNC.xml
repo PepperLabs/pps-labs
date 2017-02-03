@@ -1,0 +1,8 @@
+ <connection name="vnc"> 									<!-- nom de la machine --> 
+                <protocol>vnc</protocol> 					<!-- Protocol-->
+                <param name="hostname">10.142.0.4</param>	<!-- privilegier IP interne-->
+                <param name="port">5901</param> 			<!-- Pas utile vnc par defaut en 5901-->
+                <param name="password">motdepasse</param> 	<!-- Guacamole ne supporte que le MdP-->
+                <param name="server-layout">fr-fr-azerty</param>
+                <param name="color-depth">16</param>
+        </connection>

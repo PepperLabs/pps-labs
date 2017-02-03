@@ -1,0 +1,13 @@
+<connection name="ssh_instance_key">						<!-- nom de la machine --> 
+                <protocol>ssh</protocol>					<!-- Protocol -->
+                <param name="hostname">10.142.0.4</param>	<!-- IP interne -->
+                <param name="port">22</param>				<!-- Pas utile ssh par defaut en 22-->
+                <param name="username">diode</param> 		
+                <param name="private-key">-----BEGIN RSA PRIVATE KEY-----
+				************************************					
+					cle prive entiere 
+				************************************
+-----END RSA PRIVATE KEY-----</param>
+                <param name="server-layout">fr-fr-azerty</param>
+                <param name="color-depth">16</param>
+</connection>

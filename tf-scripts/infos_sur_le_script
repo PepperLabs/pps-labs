@@ -1,0 +1,45 @@
+Infos pour lancer le script.
+
+0)Terraform doit être correctement installé
+
+admettons, par exemple, que je veuille creer un lab nommé weshlab de 5 eleves.
+Chaque eleve aura:
+1 debian, de proco f1-micro, en acces ssh
+1 ubuntu, de proco n1-standard-1, en acces vnc.
+
+1) il faut d'abord creer des fichiers : list_processors, list_access
+
+---list_processors file---
+f1-micro
+n1-standard-1
+
+---list_access file---
+ssh
+vnc
+
+2)lancer le script:
+bash classinit.bash 5 educloud-156112 uselessarg weshlab debian-cloud/debian-8 ubuntu-os-cloud/ubuntu-1604-lts
+
+3)il vas se passer beaucoup de choses, des fenetres vont s'ouvrir et se refermer toutes seules, il faut juste attendre.
+
+4)Des que tout est fini, le script principale se termine, et une nouvelle petites fenetre de destruction s'afiche.
+
+5)pour detruire le lab, ecrire y puis faire enter dans la petite sous fenetre.
+
+6)attendre pareil jusqua la fin.
+
+
+---------INFOS UTILES-------------
+-un fichier user-mapping.xml est créé, il faut pouvoir le balancer dans la machine guacamole.
+
+-il faut regler cette histoire des champs metadata_startup_script
+
+-il faut regler l'histoire des reseaux et nottament faire des regles firewall pour autoriser tout les sous reseaux a acceder à internet.
+
+
+
+
+
+
+
+
