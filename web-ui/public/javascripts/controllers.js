@@ -1,7 +1,5 @@
-angular.module('adminModule', [])
-.controller('MainCtrl', ['$scope', '$window', function ($scope, $window) {}])
-
-.controller('OverviewCtrl', ['$scope', '$rootScope', '$http', '$q',
+angular.module('app')
+.controller('MainCtrl', ['$scope', '$rootScope', '$http', '$q',
   function ($scope, $rootScope, $http, $q) {
     $scope.templates = []
     $http({
@@ -19,7 +17,6 @@ angular.module('adminModule', [])
           url: '/labs/events'
         })
         .then(function (response) {
-          console.log('response')
           for (var i = 0; i < response.data.length; i++) {
             var d = response.data[i]
             var actDate = d.activation_dates[d.activation_dates.length - 1]
@@ -128,7 +125,6 @@ angular.module('adminModule', [])
     }
 
     $scope.addPath = function () {
-      console.log($scope.newPath)
       if (!$scope.newPath) {
         return
       }
@@ -196,7 +192,6 @@ angular.module('adminModule', [])
     if ($stateParams.eventId) {
       $scope.getEvents()
       .then(function (events) {
-        console.log('start ctrl')
         for (var i = 0; i < events.length; i++) {
           if (events[i]._id === $stateParams.eventId) {
             $scope.ev = events[i]
@@ -249,7 +244,6 @@ angular.module('adminModule', [])
         controller: 'EditModelCtrl'
       })
       editInstanceModal.result.then(function () {
-        console.log('OK')
       })
     }
 
@@ -264,7 +258,7 @@ angular.module('adminModule', [])
   function ($scope, $compile, uiCalendarConfig, $uibModal, $http, $state) {
     /* alert on eventClick */
     $scope.eventClick = function (ev, jsEvent, view) {
-      $state.transitionTo('main.edit', {eventId: ev._id})
+      $state.transitionTo('edit', {eventId: ev._id})
     }
 
      /* Render Tooltip */
@@ -300,8 +294,15 @@ angular.module('adminModule', [])
         eventRender: $scope.eventRender
       }
     }
-
+    var events = []
+    $scope.eventSources = [events]
     /* event sources array */
-    $scope.eventSources = [$scope.events]
+    $scope.getEvents()
+    .then(function (_events) {
+      events.length = 0
+      for (var i = 0; i < _events.length; i++) {
+        events.push(_events[i])
+      }
+    })
   }
 ])
