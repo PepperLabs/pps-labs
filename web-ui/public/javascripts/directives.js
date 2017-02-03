@@ -1,4 +1,4 @@
-angular.module('adminModule')
+angular.module('app')
 .directive('elemDrop', function ($document) {
   return {
     restrict: 'A',
