@@ -1,3 +1,31 @@
+.btn-success {
+  background-color: #70b85c;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #47a447;
+}
+
+.dragging-element {
+  position: absolute;
+  border: 1px solid #eee;
+  border-radius: 3px;
+  box-shadow: 0 0 2px 0 #656565;
+  background-color: #eee;
+  padding: 0.4em;
+  padding-left: 1em;
+  cursor: pointer;
+  display: block;
+  min-width: 70px;
+  font-weight: bold;
+}
+
+.not-dragging-element {
+  position: initial;
+  display: none;
+}
+
 .fc-v-event {
   cursor: pointer;
 }
@@ -41,7 +69,7 @@
   width: 100%;
 }
 
-.content.wide {
+.content.lab {
   width: 100%;
 }
 
@@ -50,7 +78,7 @@
 }
 
 .instance-model {
-  background: lightgrey;
+  background: #eee;
   padding: 5px;
   margin: 5px;
   cursor: grab;

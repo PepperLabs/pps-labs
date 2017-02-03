@@ -31,7 +31,7 @@
           </label>
         </div>
       </div>
-      <div>
+      <div ng-controller='PackagesCtrl'>
         <h4>Logiciels à installer</h4>
         <div ng-show="tpl.machineType!=''&&tpl.machineType!=='windows'">
           <div ng-repeat='package in packagesLinux'>
@@ -52,13 +52,15 @@
         </ul>
         <textarea style="width: 100%" ng-model='tpl.commands'></textarea>
       </div>
-      <div>
+      <div ng-controller='FilesCtrl'>
         <h4>Fichiers à récupérer en fin de séance</h4>
         <ul>
-          <li ng-repeat="path in tpl.pathes">{{path}} <i class="glyphicon glyphicon-pencil"></i></li>
+          <li ng-repeat="path in tpl.pathes">{{path}} 
+            <i class="glyphicon glyphicon-remove pointer" uib-tooltip="Supprimer" ng-click="removePath($index)"></i>
+          </li>
           <li>
-            <input type="text" ng-model='newPath' ng-keyup="$event.keyCode == 13 && addPath()">
-            <button class='btn btn-success' ng-click='addPath()'>Valider</button>
+            <input type="text" ng-model='newPath' ng-keyup="$event.keyCode == 13 && isPathValid() && addPath()">
+            <button class='btn btn-success' ng-disabled='!isPathValid()' ng-click='addPath()'>Valider</button>
             <span ng-if='pathError'>{{pathError}}</span>
           </li>
           
@@ -80,6 +82,8 @@
   <div class="modal-footer">
     <button class="btn btn-warning" ng-click="cancel()">Abandonner</button>
     <button class="btn btn-primary" ng-disabled="!canSaveEdit()"
+      ng-click="saveTemplate()">Sauvegarder comme modèle</button>
+    <button class="btn btn-success" ng-if='!tpl.is_template' ng-disabled="!canSaveEdit()"
       ng-click="ok()">Sauvegarder</button>
   </div> 
 </div>

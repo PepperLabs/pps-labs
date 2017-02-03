@@ -16,10 +16,11 @@ angular.module('adminModule', [])
       return $q(function (resolve, reject) {
         $http({
           methods: 'GET',
-          url: '/labs/events'
+          url: '/labs/event'
         })
         .then(function (response) {
-          console.log('response')
+          $scope.events.length = 0
+          console.log('response', response.data)
           for (var i = 0; i < response.data.length; i++) {
             var d = response.data[i]
             var actDate = d.activation_dates[d.activation_dates.length - 1]
@@ -42,22 +43,8 @@ angular.module('adminModule', [])
   }
 ])
 
-.controller('EditModelCtrl', ['$scope', '$rootScope', '$stateParams', '$uibModalInstance', '$http',
-  function ($scope, $rootScope, $stateParams, $uibModalInstance, $http) {
-    function newTpl () {
-      return {
-        name: '',
-        pathes: [],
-        machineType: 'ubuntu-16.10',
-        packages: []
-      }
-    }
-
-    $scope.pathError = ''
-    $scope.pathes = []
-
-    $scope.newPath = ''
-
+.controller('PackagesCtrl', ['$scope', '$rootScope', '$stateParams',
+  function ($scope, $rootScope, $stateParams) {
     $scope.packagesLinux = [
       {
         name: 'Node.js',
@@ -72,7 +59,7 @@ angular.module('adminModule', [])
       {
         name: 'Sublime Text',
         selected: false,
-        command: 'wget http://sublime.com/submime.tar.gz'
+        command: 'wget http://sublime.com/sublime.tar.gz'
       },
       {
         name: 'Codeblocks',
@@ -81,37 +68,15 @@ angular.module('adminModule', [])
       }
     ]
 
-    function setPkgSelected (input, output) {
+    function setPkgSelected (output, input) {
       for (var j = 0; j < output.length; j++) {
         output[j].selected = false
         for (var k = 0; k < input.length; k++) {
           if (output[j].name === input[k].name) {
+            console.log('modified', output[j].name)
             output[j].selected = true
           }
         }
-      }
-    }
-
-    var templates = {}
-
-    for (var i in $scope.$parent.templates) {
-      templates[$scope.$parent.templates[i].name] = $scope.$parent.templates[i]
-    }
-    var modelname = ''
-    if ($stateParams.modelname) {
-      modelname = $stateParams.modelname
-      if (Object.keys(templates).indexOf(modelname) === -1) {
-        return
-      }
-      $scope.tpl = templates[modelname]
-    } else {
-      $scope.newModel = true
-      $scope.edit = true
-      if (!$scope.model) {
-        $scope.tpl = newTpl()
-      } else {
-        $scope.tpl = $scope.model
-        setPkgSelected($scope.packagesLinux, $scope.tpl.packages)
       }
     }
 
@@ -127,42 +92,108 @@ angular.module('adminModule', [])
       }
     }
 
-    $scope.addPath = function () {
-      console.log($scope.newPath)
+    if ($scope.model) {
+      setPkgSelected($scope.packagesLinux, $scope.tpl.packages)
+    }
+  }
+])
+
+.controller('FilesCtrl', ['$scope', '$rootScope', '$stateParams',
+  function ($scope, $rootScope, $stateParams) {
+    $scope.isPathValid = function () {
+      var index
+
       if (!$scope.newPath) {
-        return
+        return false
       }
 
-      if ($scope.newPath[0] !== '/') {
-        $scope.editError.push('Le chemin doit être absolu')
-        return
-      }
-      if ($scope.newPath.match(/\/\.\./)) {
-        $scope.editError.push("/.. n'est pas accepté")
-        return
+      if ((index = $scope.editError.indexOf('Vous avez déjà indiqué ce fichier')) === -1) {
+        if ($scope.tpl.pathes.indexOf($scope.newPath) !== -1) {
+          $scope.editError.push('Vous avez déjà indiqué ce fichier')
+          return false
+        }
+      } else {
+        $scope.editError.splice(index, 1)
       }
 
+      if ((index = $scope.editError.indexOf('Le chemin doit être absolu')) === -1) {
+        if ($scope.newPath[0] !== '/') {
+          $scope.editError.push('Le chemin doit être absolu')
+          return false
+        }
+      } else {
+        $scope.editError.splice(index, 1)
+      }
+
+      if ((index = $scope.editError.indexOf("/.. n'est pas accepté")) === -1) {
+        if ($scope.newPath.match(/\/\.\./)) {
+          $scope.editError.push("/.. n'est pas accepté")
+          return false
+        }
+      } else {
+        $scope.editError.splice(index, 1)
+      }
+      return true
+    }
+
+    $scope.addPath = function () {
       $scope.tpl.pathes.push($scope.newPath)
 
       $scope.newPath = ''
     }
 
+    $scope.removePath = function (index) {
+      $scope.tpl.pathes.splice(index, 1)
+    }
+  }
+])
+
+.controller('EditModelCtrl', ['$scope', '$rootScope', '$stateParams', '$uibModalInstance', '$http',
+  function ($scope, $rootScope, $stateParams, $uibModalInstance, $http) {
+    $scope.editError = []
+    $scope.pathes = []
+    $scope.newPath = ''
+    var templates = {}
+
+    function newTpl () {
+      return {
+        is_template: true,
+        name: '',
+        pathes: [],
+        machineType: 'ubuntu-16.10',
+        packages: []
+      }
+    }
+
+    for (var i in $scope.$parent.templates) {
+      templates[$scope.$parent.templates[i].name] = $scope.$parent.templates[i]
+    }
+
+    if (!$scope.model) {
+      $scope.tpl = newTpl()
+    } else {
+      $scope.tpl = $scope.model
+    }
+
     $scope.editResource = function (edit) {
       $scope.edit = edit
     }
+
     $scope.ok = function () {
-      for (var i = 0; i < $scope.packagesLinux; i++) {
-        if ($scope.packagesLinux[i].selected) {
-          $scope.tpl.packages.push($scope.packagesLinux[i])
-        }
-      }
+      $uibModalInstance.close()
+    }
+
+    $scope.saveTemplate = function () {
+      var tpl = angular.copy($scope.tpl)
+
+      tpl.is_template = true
       $http({
         method: $scope.tpl._id ? 'PUT' : 'POST',
         url: '/labs/template/machine',
-        data: $scope.tpl
+        data: tpl
       })
       .then((response) => {
-        if (!$scope.model) {
+        if (!$scope.model || $scope.model.is_template === false) {
           $scope.$parent.templates.push(response.data)
         } else {
           for (var i = 0; i < $scope.$parent.templates.length; i++) {
@@ -191,61 +222,83 @@ angular.module('adminModule', [])
   }
 ])
 
-.controller('EditEventCtrl', ['$scope', '$uibModal', '$http', '$stateParams',
-  function ($scope, $uibModal, $http, $stateParams) {
+.controller('EditEventCtrl', ['$scope', '$uibModal', '$http', '$stateParams', '$state',
+  function ($scope, $uibModal, $http, $stateParams, $state) {
+    $scope.maxNetworks = 1
+    $scope.maxMachines = 1
+    $scope.machinesCount = 0
+    $scope.draggedElem = false
+
+    function newLab () {
+      return {
+        is_template: false,
+        networks: [[]]
+      }
+    }
+
     if ($stateParams.eventId) {
       $scope.getEvents()
       .then(function (events) {
-        console.log('start ctrl')
         for (var i = 0; i < events.length; i++) {
           if (events[i]._id === $stateParams.eventId) {
             $scope.ev = events[i]
+            break
           }
         }
+        if ($scope.ev && $scope.ev.lab) {
+          $scope.lab = $scope.ev.lab
+        } else {
+          $scope.lab = newLab()
+        }
       })
+    } else {
+      $state.transitionTo('main.labs')
     }
-    $scope.networks = [[]]
-    $scope.draggedElem = false
+
+    $scope.countMachines = function () {
+      $scope.machinesCount = 0
+      for (var i = 0; i < $scope.lab.networks.length; i++) {
+        $scope.machinesCount += $scope.lab.networks[i].length
+      }
+    }
+
+    $scope.addInstance = function (network, instance) {
+      if ($scope.machinesCount >= $scope.maxMachines) return
+      var copy = angular.copy(instance)
+      delete copy._id
+      copy.is_template = false
+      network.push(copy)
+      $scope.countMachines()
+    }
+
     $scope.addNetwork = function () {
-      if ($scope.networks.length < 3) {
-        $scope.networks.push([])
+      if ($scope.lab.networks.length < 3) {
+        $scope.lab.networks.push([])
       }
     }
 
     $scope.notFinished = function () {
-      return $scope.networks[0].length < 1
+      return $scope.lab.networks[0].length < 1
     }
 
     $scope.rmNetwork = function (index) {
-      $scope.networks.splice(index, 1)
+      $scope.lab.networks.splice(index, 1)
+      $scope.countMachines()
     }
 
     $scope.rmInstance = function (network, index) {
       network.splice(index, 1)
+      $scope.countMachines()
     }
 
-    $scope.$watch('networkNbr', function (curr, old) {
-      if (curr === old) {
-        return
-      }
-      if (curr < old) {
-        $scope.networks.splice(curr - 1, old - curr)
-        return
-      }
-      if (curr > old) {
-        for (var i = old; i < curr; i++) {
-          $scope.networks.push([])
-        }
-      }
-    })
-
-    $scope.editInstanceModel = function (model) {
+    $scope.editInstanceModel = function (model, standalone) {
       $scope.model = model
+      $scope.standalone = standalone
       var editInstanceModal = $uibModal.open({
         animation: true,
         templateUrl: 'partials/edit-model.html',
         scope: $scope,
-        size: 'md',
+        size: 'lg',
         controller: 'EditModelCtrl'
       })
       editInstanceModal.result.then(function () {
@@ -253,9 +306,23 @@ angular.module('adminModule', [])
       })
     }
 
+    $scope.saveTemplate = function () {
+      console.log('test')
+    }
+
     $scope.ok = function () {
+      $scope.ev.lab = $scope.lab
+      $http({
+        method: 'PUT',
+        url: '/labs/event',
+        data: $scope.ev
+      })
+      .then(function (response) {
+        $scope.ev = response.data
+      })
     }
     $scope.cancel = function () {
+      $state.transitionTo('main.labs')
     }
   }
 ])
@@ -301,7 +368,12 @@ angular.module('adminModule', [])
       }
     }
 
-    /* event sources array */
     $scope.eventSources = [$scope.events]
+
+    $scope.getEvents()
+    .then(function (events) {
+      console.log(events)
+      /* event sources array */
+    })
   }
 ])
