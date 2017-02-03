@@ -1,5 +1,6 @@
 angular.module('app', [
   'ui.router',
+  'pascalprecht.translate',
   'ui.calendar',
   'ui.bootstrap',
   'userModule',

@@ -1,9 +1,10 @@
 angular.module('app')
-.directive('elemDrop', function ($document) {
+.directive('elemDrop', ['$document', '$rootScope', function ($document, $rootScope) {
   return {
     restrict: 'A',
     scope: {
-      elemDrop: '='
+      elemDrop: '=',
+      elemDropNetwork: '='
     },
     link: function (scope, element) {
       function mouseup (event) {
@@ -11,13 +12,10 @@ angular.module('app')
         var posX = event.clientX
         var posY = event.clientY
         var params = element[0].getBoundingClientRect()
-        if (scope && scope.$parent && scope.$parent.$parent &&
-            scope.$parent.$parent.draggedElem &&
+        if ($rootScope.draggedElem &&
             posX >= params.left && posX <= params.right &&
             posY >= params.top && posY <= params.bottom) {
-          var copy = angular.copy(scope.$parent.$parent.draggedElem)
-          scope.elemDrop.push(copy)
-          scope.$apply()
+          scope.elemDrop(scope.elemDropNetwork, $rootScope.draggedElem)
         }
       }
 
@@ -35,25 +33,24 @@ angular.module('app')
       }
     }
   }
-})
+}])
 
-.directive('elemDrag', function ($document) {
+.directive('elemDrag', ['$document', '$rootScope', function ($document, $rootScope) {
   return {
     scope: {
       elemDrag: '='
     },
     link: function (scope, element, attr) {
       var rawContent = scope.elemDrag
-      var parentScope = scope.$parent.$parent
 
-      if (!parentScope.getRegisteredDrop) {
-        parentScope.dropsCb = []
-        parentScope.getRegisteredDrop = function () {
-          return parentScope.dropsCb
+      if (!$rootScope.getRegisteredDrop) {
+        $rootScope.dropsCb = []
+        $rootScope.getRegisteredDrop = function () {
+          return $rootScope.dropsCb
         }
 
-        parentScope.registerDrop = function (fn) {
-          parentScope.dropsCb.push(fn)
+        $rootScope.registerDrop = function (fn) {
+          $rootScope.dropsCb.push(fn)
         }
       }
 
@@ -80,7 +77,7 @@ angular.module('app')
         scope.init.init = false
         scope.$apply()
         self.draggedElem = false
-        parentScope.draggedElem = scope.elemDrag
+        $rootScope.draggedElem = scope.elemDrag
         self.initX = event.pageX
         self.initY = event.pageY
       }
@@ -101,7 +98,7 @@ angular.module('app')
           }
           self.draggedElem = true
 
-          parentScope.draggedElem.dragged = true
+          $rootScope.draggedElem.dragged = true
           scope.$apply()
           self.draggedElement = rawContent
           draggable.addClass('dragging-element')
@@ -119,13 +116,12 @@ angular.module('app')
       $document.on('mousemove', mousemove)
 
       function mouseup (event) {
-        if (!scope.$parent || !scope.$parent.$parent) return
-        var drops = scope.$parent.$parent.getRegisteredDrop()
+        var drops = $rootScope.getRegisteredDrop()
         for (var i in drops) {
           drops[i](event)
         }
         event.preventDefault()
-        parentScope.draggedElem = null
+        $rootScope.draggedElem = null
         self.draggedElem = false
         scope.$apply()
         init = false
@@ -137,4 +133,4 @@ angular.module('app')
       $document.on('mouseup', mouseup)
     }
   }
-})
+}])

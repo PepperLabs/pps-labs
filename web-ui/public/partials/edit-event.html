@@ -1,5 +1,5 @@
-﻿<div id='resource'>
-  <div class='machines-list'>
+﻿<div id='resource'  ng-init='createLab = true'>
+  <div class='machines-list' ng-if='createLab == true'>
     <div class='title'>
       Modèles de machines
     </div>
@@ -14,7 +14,7 @@
     <div class='title'>
       Édition du lab
     </div>
-    <div class='content wide'>
+    <div class='content lab'>
       <div class='modal-header'>
         <h3 class='modal-title' id='modal-title'>
           {{ev.title}}
@@ -27,7 +27,7 @@
           {{ev.start|date: 'hh:mm'}} à {{ev.end|date: 'hh:mm'}}
         </h5>
       </div>
-      <div ng-init='createLab = false' class='modal-body' id='modal-body'>
+      <div class='modal-body' id='modal-body'>
         <div ng-hide='createLab'>
           <button class='btn btn-success' ng-click='createLab = true'>
             Créer un lab pour cette séance
@@ -43,16 +43,16 @@
                  ng-if='$index > 0 || networks.length > 1' ng-click='rmNetwork($index)'></span>
               Réseau {{$index + 1}}
             </div>
-            <div class="content" 
-              elem-drop='network'>
+            <div class="content" elem-drop='addInstance' elem-drop-network='network'>
               <span ng-show="!network.length">Veuillez déposer des machines ici</span>
               <div ng-repeat="conf in network" class='instance'>
                 <span class='glyphicon glyphicon-remove pointer' ng-click='rmInstance(network, $index)'></span>
-                {{conf.name}} - <a class='pointer' ng-click='editInstanceModel(conf)'>Edit</a>
+                {{conf.name}} - <a class='pointer' ng-click='editInstanceModel(conf, true)'>Editer</a>
               </div>
+              <span ng-if='machinesCount === maxMachines'>Le nombre maximum de machines a été atteint</span>
             </div>
           </div>
-          <div class='network fake pointer' ng-show='networks.length < 3' ng-click='addNetwork()'>
+          <div class='network fake pointer' ng-show='networks.length < maxNetworks' ng-click='addNetwork()'>
             <div class='title'>
               <span style='visibility:hidden'>yolo</span>
             </div>
@@ -61,19 +61,16 @@
             </div>
           </div>
           <div>
-            <div ng-show='networks.length == 3'>Le nombre maximum de réseaux a été atteint</div>
-          </div>
-          <div>
-           <h5>Modèles de machines</h5>
+            <div ng-show='networks.length == maxNetworks'>Le nombre maximum de réseaux a été atteint</div>
           </div>
         </div>
       </div>
       <div class='modal-footer' style='text-align: center'>
-        <button ng-disabled='notFinished()' class="btn btn-success" type="button" ng-click="ok(true)">
-          Sauvegarder comme modèle
-        </button>
-        <button ng-disabled='notFinished()' class="btn btn-primary" type="button" ng-click="ok()">Enregistrer</button>
         <button class="btn btn-warning" type="button" ng-click="cancel()">Annuler</button>
+        <!-- <button ng-disabled='notFinished()' class="btn btn-primary" type="button" ng-click="saveTemplate()">
+          Sauvegarder comme modèle
+          </button> -->
+        <button ng-disabled='notFinished()' class="btn btn-success" type="button" ng-click="ok()">Sauvegarder</button>
 
       </div>
     </div>
