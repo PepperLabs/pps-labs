@@ -37,22 +37,22 @@
           </button>
         </div>
         <div ng-if='createLab == true' style='text-align: left'>
-          <div class='network' ng-repeat='network in networks'>
+          <div class='network' ng-repeat='network in lab.networks'>
             <div class="title">
               <span class='glyphicon glyphicon-remove pointer'
-                 ng-if='$index > 0 || networks.length > 1' ng-click='rmNetwork($index)'></span>
+                 ng-if='$index > 0 || lab.networks.machines.length > 1' ng-click='rmNetwork($index)'></span>
               Réseau {{$index + 1}}
             </div>
             <div class="content" elem-drop='addInstance' elem-drop-network='network'>
-              <span ng-show="!network.length">Veuillez déposer des machines ici</span>
-              <div ng-repeat="conf in network" class='instance'>
+              <span ng-show="!network.machines.length">Veuillez déposer des machines ici</span>
+              <div ng-repeat="conf in network.machines" class='instance'>
                 <span class='glyphicon glyphicon-remove pointer' ng-click='rmInstance(network, $index)'></span>
                 {{conf.name}} - <a class='pointer' ng-click='editInstanceModel(conf, true)'>Editer</a>
               </div>
               <span ng-if='machinesCount === maxMachines'>Le nombre maximum de machines a été atteint</span>
             </div>
           </div>
-          <div class='network fake pointer' ng-show='networks.length < maxNetworks' ng-click='addNetwork()'>
+          <div class='network fake pointer' ng-show='lab.networks.length < maxNetworks' ng-click='addNetwork()'>
             <div class='title'>
               <span style='visibility:hidden'>yolo</span>
             </div>
@@ -61,7 +61,7 @@
             </div>
           </div>
           <div>
-            <div ng-show='networks.length == maxNetworks'>Le nombre maximum de réseaux a été atteint</div>
+            <div ng-show='lab.networks.length == maxNetworks'>Le nombre maximum de réseaux a été atteint</div>
           </div>
         </div>
       </div>

@@ -88,3 +88,11 @@
   width:100%;
   border-bottom: 1px solid lightgrey;
 }
+
+#upperbar .general-menu .item.calendar:before {
+  content: "\e109";
+}
+
+#upperbar .general-menu .item.calendar.selected {
+  border-left-color: #ed9319;
+}

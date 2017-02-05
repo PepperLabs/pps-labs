@@ -6,7 +6,7 @@ const Course = mongoose.model('CourseActivity')
 const Group = mongoose.model('Group')
 const LabActivity = mongoose.model('LabActivity')
 const Machine = mongoose.model('Machine')
-const debug = require('debug')('pps:labs-route')
+const debug = require('debug')('pps:labs')
 
 router.get('/event', utils.hasToBeConnected, getEvents)
 router.put('/event', utils.hasToBeConnected, editEvent)
@@ -69,33 +69,52 @@ function getEvents (req, res, next) {
     return LabActivity.find_({'_id': {'$in': _labsIds}})
   })
   .then((labs) => {
-    res.json(courses)
+    for (let i = 0; i < labs.length; i++) {
+      for (let j = 0; j < _courses.length; j++) {
+        if (_labsIdsRef[_courses[j]._id.toString()] === labs[i]._id.toString()) {
+          _courses[j].lab = labs[i]
+        }
+      }
+    }
+    res.json(_courses)
   })
   .catch(next)
 }
 
 function editEvent (req, res, next) {
   // TODO: security
-  // let _course
+  let _course
+  let _lab
+  debug('body', req.body.lab)
+  debug('body', req.body.lab.networks)
   // Course.isRelatedTo(req.user, req.body._id)
   Course.findById_(req.body._id)
   .then((course) => {
+    _course = course
     if (course.members.length === 0) {
       // new lab
-      let lab = new LabActivity(req.body.lab)
+      _lab = new LabActivity(req.body.lab)
+      if (!_lab.external_memberships) {
+        _lab.external_memberships = []
+      }
 
-      lab.external_memberships.push({
+      _lab.external_memberships.push({
         _resource: course._id
       })
-      return lab.save()
+      return _lab.save()
     }
 
     // edit lab
     return LabActivity.findById_(course.members[0]._resource)
     .then((lab) => {
       lab.copy(req.body.lab)
+      _lab = lab
       return lab.save()
     })
+  })
+  .then(() => {
+    _course.lab = _lab
+    res.json(_course.sendSafe())
   })
   .catch(next)
 }

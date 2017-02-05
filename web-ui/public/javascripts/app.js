@@ -14,19 +14,19 @@ angular.module('app', [
 }])
 
 .config(['$urlRouterProvider', function ($urlRouterProvider) {
-  $urlRouterProvider.otherwise('/labs')
+  $urlRouterProvider.otherwise('/calendar')
 }])
 
 .config(['$stateProvider',
   function ($stateProvider) {
     $stateProvider
-    .state('labs', {
-      url: '/labs',
+    .state('calendar', {
+      url: '/calendar',
       data: {
-        title: 'Labs'
+        title: 'Calendrier'
       },
-      templateUrl: 'partials/labs.html',
-      controller: 'LabsCtrl'
+      templateUrl: 'partials/calendar.html',
+      controller: 'CalendarCtrl'
     })
     .state('edit', {
       url: '/edit/:eventId',
@@ -44,7 +44,7 @@ angular.module('app', [
 
 .run(['$state', '$rootScope', 'User', 'userId', '$timeout', '$cacheFactory', '$location', '$window',
   function ($state, $rootScope, User, userId, $timeout, $cacheFactory, $location, $window) {
-    $rootScope.mainPageRoute = '/labs'
+    $rootScope.mainPageRoute = '/calendar'
     var currentTimeout = false
     $rootScope.setInfo = function (type, message, duration) {
       $rootScope.info = message
@@ -83,17 +83,13 @@ angular.module('app', [
       $rootScope.user = User.get({param1: 'me'}, function (res) {
         $rootScope.loggedIn = true
       }, function () {
-        $rootScope.loggedIn = false
-        $rootScope.user = new User()
-        $window.location.href = '/#/login?url=' + window.encodeURIComponent($location.absUrl())
+        $window.location.href = '/#!/login?url=' + window.encodeURIComponent($location.absUrl())
       })
     })
 
     $rootScope.logout = function () {
       $rootScope.user.$logout(function () {
-        $rootScope.loggedIn = false
-        delete $rootScope.user
-        $window.location.href = '/#/login?url=' + window.encodeURIComponent($location.absUrl())
+        $window.location.href = '/#!/login?url=' + window.encodeURIComponent($location.absUrl())
         $rootScope.setInfo(true, 'Déconnexion réussie', 3000)
       })
     }

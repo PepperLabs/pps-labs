@@ -28,7 +28,8 @@ angular.module('app')
               school: d.school,
               group: d.group,
               start: actDate.date_add,
-              end: actDate.date_remove
+              end: actDate.date_remove,
+              lab: d.lab
             })
             resolve($scope.events)
           }
@@ -226,10 +227,11 @@ angular.module('app')
     $scope.machinesCount = 0
     $scope.draggedElem = false
 
-    function newLab () {
+    function newLab (name) {
       return {
+        name: name,
         is_template: false,
-        networks: [[]]
+        networks: [{machines: []}]
       }
     }
 
@@ -242,11 +244,13 @@ angular.module('app')
             break
           }
         }
+        console.log('event', $scope.ev)
         if ($scope.ev && $scope.ev.lab) {
           $scope.lab = $scope.ev.lab
         } else {
-          $scope.lab = newLab()
+          $scope.lab = newLab($scope.ev.title)
         }
+        $scope.countMachines()
       })
     } else {
       $state.transitionTo('main.labs')
@@ -255,7 +259,7 @@ angular.module('app')
     $scope.countMachines = function () {
       $scope.machinesCount = 0
       for (var i = 0; i < $scope.lab.networks.length; i++) {
-        $scope.machinesCount += $scope.lab.networks[i].length
+        $scope.machinesCount += $scope.lab.networks[i].machines.length
       }
     }
 
@@ -264,18 +268,18 @@ angular.module('app')
       var copy = angular.copy(instance)
       delete copy._id
       copy.is_template = false
-      network.push(copy)
+      network.machines.push(copy)
       $scope.countMachines()
     }
 
     $scope.addNetwork = function () {
       if ($scope.lab.networks.length < 3) {
-        $scope.lab.networks.push([])
+        $scope.lab.networks.push({machines: []})
       }
     }
 
     $scope.notFinished = function () {
-      return $scope.lab.networks[0].length < 1
+      return !$scope.lab || $scope.lab.networks[0].machines.length < 1
     }
 
     $scope.rmNetwork = function (index) {
@@ -284,7 +288,7 @@ angular.module('app')
     }
 
     $scope.rmInstance = function (network, index) {
-      network.splice(index, 1)
+      network.machines.splice(index, 1)
       $scope.countMachines()
     }
 
@@ -308,6 +312,8 @@ angular.module('app')
 
     $scope.ok = function () {
       $scope.ev.lab = $scope.lab
+      console.log($scope.ev)
+
       $http({
         method: 'PUT',
         url: '/labs/event',
@@ -323,8 +329,9 @@ angular.module('app')
   }
 ])
 
-.controller('LabsCtrl', ['$scope', '$compile', 'uiCalendarConfig', '$uibModal', '$http', '$state',
+.controller('CalendarCtrl', ['$scope', '$compile', 'uiCalendarConfig', '$uibModal', '$http', '$state',
   function ($scope, $compile, uiCalendarConfig, $uibModal, $http, $state) {
+    $scope.$parent.view = 'calendar'
     /* alert on eventClick */
     $scope.eventClick = function (ev, jsEvent, view) {
       $state.transitionTo('edit', {eventId: ev._id})
@@ -363,7 +370,7 @@ angular.module('app')
         eventRender: $scope.eventRender
       }
     }
-<<<<<<< HEAD
+
     var events = []
     $scope.eventSources = [events]
     /* event sources array */
@@ -373,15 +380,6 @@ angular.module('app')
       for (var i = 0; i < _events.length; i++) {
         events.push(_events[i])
       }
-=======
-
-    $scope.eventSources = [$scope.events]
-
-    $scope.getEvents()
-    .then(function (events) {
-      console.log(events)
-      /* event sources array */
->>>>>>> 4e197b555de858a27505c1041f68a673e4be92c3
     })
   }
 ])
