@@ -18,4 +18,7 @@ const CourseActivitySchema = new BaseActivitySchema({
   group: String
 })
 
+CourseActivitySchema.virtual('lab').set(function (item) { this._lab = item })
+  .get(function () { return this._lab })
+
 module.exports = Resource.discriminator('CourseActivity', CourseActivitySchema)
