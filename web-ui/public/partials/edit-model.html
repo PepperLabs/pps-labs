@@ -5,67 +5,64 @@
     </h2>
   </div>
   <div class="modal-body" id='modal-body' style='text-align: left'>
+    <div ng-controller="ImageCtrl">
+      <h4>Système</h4>
+      <h5>Windows</h5>
+      <label ng-repeat="image in images|filter:'windows'">
+        <input type="radio" ng-model="tpl.image" value="{{image.name}}" ng-click='setFamily(image.type)'> {{image.description}}&nbsp;&nbsp;&nbsp;
+      </label>
+      <h5>GNU/Linux</h5>
+      <label ng-repeat="image in images|filter:'linux'">
+        <input type="radio" ng-model="tpl.image" value="{{image.name}}" ng-click='setFamily(image.type)'> {{image.description}}&nbsp;&nbsp;&nbsp;
+      </label>
+    </div>
+    <div ng-controller='MachineTypeCtrl'>
+      <h4>Puissance</h4>
+      <label ng-repeat='type in machineTypes'>
+        <input type='radio' ng-model='tpl.machineType' value='{{type}}'> {{type}}&nbsp;&nbsp;&nbsp;
+      </label>
+    </div>
+    <div ng-show="family === 'linux'">
+      <h4>Utilisation de la machine</h4>
+      <label>
+        <input type="radio" ng-model='tpl.gui' ng-value='false'> Terminal (ligne de commande)
+      </label><br>
+      <label>
+        <input type="radio" ng-model='tpl.gui' ng-value='true'> Interface graphique
+      </label>
+    </div>
+    <div ng-controller='PackagesCtrl'>
+      <h4>Logiciels à installer</h4>
+      <div ng-repeat='package in packages|filter:family'>
+        <label uib-tooltip='{{package.command}}'>
+          <input type="checkbox" value='{{package.name}}' ng-model='package.selected' ng-click='editPkgs()'>
+          {{package.name}}
+        </label>
+      </div>
+    </div>
     <div>
-      <div>
-        <h4>Type de machine</h4>
-        <div>
-          <label>
-            <input type="radio" ng-model="tpl.machineType" value="windows"> Windows Server 2016
-          </label><br>
-          <label>
-            <input type="radio" ng-model="tpl.machineType" value="ubuntu-16.10"> Linux Ubuntu 16.10
-          </label><br>
-          <!--<label>
-            <input type="radio" ng-model="tpl.machineType" value="debian-8"> Linux Debian 8 (Jessy)
-            </label>-->
-        </div>
-      </div>
-      <div ng-show="tpl.machineType!=''&&tpl.machineType!=='windows'">
-        <h4>Utilisation de la machine</h4>
-        <div>
-          <label>
-            <input type="radio" ng-model='tpl.ui' value='console'> Terminal (ligne de commande)
-          </label><br>
-          <label>
-            <input type="radio" ng-model='tpl.ui' value='graphical'> Interface graphique
-          </label>
-        </div>
-      </div>
-      <div ng-controller='PackagesCtrl'>
-        <h4>Logiciels à installer</h4>
-        <div ng-show="tpl.machineType!=''&&tpl.machineType!=='windows'">
-          <div ng-repeat='package in packagesLinux'>
-            <label uib-tooltip='{{package.command}}'>
-            <input type="checkbox" value='{{package.name}}' ng-model='package.selected' ng-click='editPkgs()'>
-            {{package.name}}
-          </label>
-          </div>
-        </div>
-      </div>
-      <div>
-        <h4>Script de démarrage</h4>
-        <p>Entrez les commandes que vous souhaitez exécuter à l'installation de la machine.<br>
-        Ex: apt-get install
-        </p>
-        <ul>
-          <li ng-repeat="pkg in tpl.packages">{{pkg.command}}</li>
-        </ul>
-        <textarea style="width: 100%" ng-model='tpl.commands'></textarea>
-      </div>
-      <div ng-controller='FilesCtrl'>
-        <h4>Fichiers à récupérer en fin de séance</h4>
-        <ul>
-          <li ng-repeat="path in tpl.pathes">{{path}} 
-            <i class="glyphicon glyphicon-remove pointer" uib-tooltip="Supprimer" ng-click="removePath($index)"></i>
-          </li>
-          <li>
-            <input type="text" ng-model='newPath' ng-keyup="$event.keyCode == 13 && isPathValid() && addPath()">
-            <button class='btn btn-success' ng-disabled='!isPathValid()' ng-click='addPath()'>Valider</button>
-            <span ng-if='pathError'>{{pathError}}</span>
-          </li>
-          
-        </ul>
-      </div>
+      <h4>Script de démarrage</h4>
+      <p>Entrez les commandes que vous souhaitez exécuter à l'installation de la machine.<br>
+      Ex: apt-get install
+      </p>
+      <ul>
+        <li ng-repeat="pkg in tpl.packages">{{pkg.command}}</li>
+      </ul>
+      <textarea style="width: 100%" ng-model='tpl.commands'></textarea>
+    </div>
+    <div ng-controller='FilesCtrl'>
+      <h4>Fichiers à récupérer en fin de séance</h4>
+      <ul>
+        <li ng-repeat="path in tpl.pathes">{{path}} 
+          <i class="glyphicon glyphicon-remove pointer" uib-tooltip="Supprimer" ng-click="removePath($index)"></i>
+        </li>
+        <li>
+          <input type="text" ng-model='newPath' ng-keyup="$event.keyCode == 13 && isPathValid() && addPath()">
+          <button class='btn btn-success' ng-disabled='!isPathValid()' ng-click='addPath()'>Valider</button>
+          <span ng-if='pathError'>{{pathError}}</span>
+        </li>
+        
+      </ul>
     </div>
     <div class="alert alert-danger" role="alert" ng-if="edit && editError.length > 0" style="margin: 0">
       <ul>

@@ -1,73 +1,121 @@
 'use strict'
-// const utils = require('pps-utils')
-// const mongoose = require('mongoose')
-// const Course = mongoose.model('CourseActivity')
-// const Group = mongoose.model('Group')
-// const LabActivity = mongoose.model('LabActivity')
-// const Machine = mongoose.model('Machine')
 const debug = require('debug')('pps:terraform')
-// const path = require('path')
-const fs = require('fs')
-// const parseString = require('xml2js').parseString
-const Builder = require('xml2js').Builder()
-const builder = new Builder()
+const builder = new (require('xml2js')).Builder()
 const tf = require('./tf-vars.js')
-
+const path = require('path')
+const mkdirp = require('mkdirp')
+const fs = require('fs')
+const exec = require('child_process').exec
 let currentZone = 0
+
+/**
+  A priori ce qu'il semble manquer:
+  - conversion de LabActivity vers Terraform
+
+  **/
 
 // const engine = 'gce'
 // const credentials = fs.readFileSync('../' + engine + '-credentials.json')
 class Terraform {
-  constructor ({engine, credentials, project, lab, users, instances, networkPrefix}) {
+  constructor ({engine, credentials, project, lab, users, machines, networkPrefix}) {
     this.engine = engine
-    this.credentials = credentials
+    this.credentials = JSON.stringify(credentials)
     this.project = project
     this.lab = lab
+    this.formatName()
     this.users = users
-    this.instances = instances
+    this.machines = machines
     this.networkPrefix = networkPrefix
+    this.networkName = 'net-' + this.project + '-fake'
+    this.networkTfVar = tf.network[this.engine] + '.' + this.networkName
+    this.netinitPath = path.join(__dirname, '../tf-tests/netinit')
+    this.instancesParams = []
+    // this.userTfFiles = []
+    this.mainProjectFile = null
   }
 
-  init () {
+  formatName () {
+    if (this.lab.length > 17) {
+      this.lab = this.lab.slice(0, 17 - this.lab.length)
+    }
+    this.lab = this.lab.toLowerCase()
+    this.lab = this.lab.replace(/[^0-9a-z-]/g, '-')
+  }
+
+  initLab () {
     // Marche à suivre:
     // on génère un couple clé privée/clé publique pour guacamole
     // on crée un fichier tf pour le lab
-    let mainProjectFile = this.genProject()
+    this.mainProjectFile = this.genProject()
     // on lui adjoint le réseau auquel il sera affilié
-    this.genNetwork(mainProjectFile)
-    // on crée un fichier tf pour le firewall
-    let fwProjectFile = this.genProject()
-    // on génère sa conf pour accéder en ssh au projet ... ?
-    this.genFirewall(fwProjectFile)
-    // on génère les fichiers tf étudiants
-    let userFiles = []
-    let machinesParams = []
-    // on génère le fichier guacamole user-mapping.xml
-    let guacUserMapping = this.genGuacamoleUserMapping(this.users, this.instances)
+    this.genNetwork(this.mainProjectFile)
+    this.genFirewall(this.mainProjectFile)
     // pour chaque utilisateur on génère:
     // * un sous-réseau,
     // * des règles firewall,
     // * des instances
     for (let i = 0; i < this.users.length; i++) {
-      let userFile = this.genProject()
-      this.genSubnetwork(mainProjectFile, i)
-      this.genFirewallRule(fwProjectFile, i)
+      this.genSubnetwork(this.mainProjectFile, i)
+      this.genFirewallRule(this.mainProjectFile, i)
       let params = []
-      for (let j = 0; j < this.instances.length; i++) {
-        params.push(this.genInstance(userFile, i, this.instances[j], j))
+      for (let j = 0; j < this.machines.length; j++) {
+        params.push(this.genInstance(this.mainProjectFile, i, this.machines[j], j))
       }
-      this.genServiceAccountScope(userFile)
-      userFiles.push(userFile)
-      machinesParams.push(params)
+      this.instancesParams.push(params)
     }
 
+    return this.saveTfConf()
+  }
+
+  saveTfConf () {
+    return new Promise((resolve, reject) => {
+      let filename = 'lab.tf.json'
+      let projectFile = JSON.stringify(this.mainProjectFile, null, 2)
+      mkdirp(this.netinitPath, (err) => {
+        if (err) return reject(err)
+        fs.writeFile(path.join(this.netinitPath, filename), projectFile, (err) => {
+          if (err) return reject(err)
+          resolve()
+        })
+      })
+    })
+  }
+
+  apply () {
+    return new Promise((resolve, reject) => {
+      exec('terraform apply', {cwd: this.netinitPath}, (err, stdout, stderr) => {
+        if (err) return reject(err)
+        console.log('apply stdout:', stdout)
+        console.log('apply stderr:', stderr)
+        resolve()
+      })
+    })
+  }
+
+  destroy () {
+    return new Promise((resolve, reject) => {
+      exec('terraform destroy -force', {cwd: this.netinitPath}, (err, stdout, stderr) => {
+        if (err) return reject(err)
+        console.log('destroy stdout:', stdout)
+        console.log('destroy stderr:', stderr)
+        resolve()
+      })
+    })
+  }
+
+  initGuacamole () {
+    // et ensuite seulement on instancie le guacamole
+    // on génère le fichier guacamole user-mapping.xml
+    let guacUserMapping = this.genGuacamoleUserMapping()
     // à la fin, on configure le guac avec tous nos paramètres
-    for (let i = 0; i < this.machinesParams.length; i++) {
-      this.genGuacamoleAuthorize(guacUserMapping, i, this.users[i], machinesParams[i])
+    for (let i = 0; i < this.instancesParams.length; i++) {
+      this.genGuacamoleAuthorize(guacUserMapping, i, this.users[i], this.instancesParams[i])
     }
 
     // on génère la conf du guac pour se connecter aux machines
     let guacUserMappingContent = this.genXml(guacUserMapping)
+
+    return guacUserMappingContent
   }
 
   addMachine () {
@@ -83,20 +131,20 @@ class Terraform {
         [tf.provider[this.engine]]: {
           credentials: this.credentials,
           project: this.project,
-          region: tf.zones[this.engine][currentZone]
+          region: tf.regions[this.engine][currentZone]
         }
       }
     }
   }
 
-  genNetwork (conf, project) {
+  genNetwork (conf) {
     if (!conf.resource) {
       conf.resource = []
     }
     conf.resource.push({
       [tf.network[this.engine]]: {
-        ['net' + project]: {
-          name: 'net' + project,
+        [this.networkName]: {
+          name: this.networkName,
           auto_create_subnetworks: 'false'
         }
       }
@@ -104,11 +152,15 @@ class Terraform {
   }
 
   getSubnetwork (id) {
-    return this.networkPrefix + '.' + id + '.0/24'
+    return this.networkPrefix + id + '.0/24'
   }
 
   getIp (subnetwork, machine) {
-    return this.networkPrefix + '.' + subnetwork + '.' + machine
+    return this.networkPrefix + subnetwork + '.' + (machine + 2)
+  }
+
+  getSubnetworkName (id) {
+    return '${' + tf.subnetwork[this.engine] + '.subnet-' + this.lab + '-' + id + '.name}'
   }
 
   genSubnetwork (conf, id) {
@@ -117,11 +169,11 @@ class Terraform {
     }
     conf.resource.push({
       [tf.subnetwork[this.engine]]: {
-        ['subnet' + this.lab + '-' + id]: {
-          name: 'subnet' + this.lab + '-' + id,
+        ['subnet-' + this.lab + '-' + id]: {
+          name: 'subnet-' + this.lab + '-' + id,
           ip_cidr_range: this.getSubnetwork(id),
-          network: tf.subnetwork[this.engine] + '.net' + this.lab + '.self_link',
-          region: tf.zones[this.engine][currentZone]
+          network: '${' + this.networkTfVar + '.self_link}',
+          region: tf.regions[this.engine][currentZone]
         }
       }
     })
@@ -133,14 +185,14 @@ class Terraform {
     }
     conf.resource.push({
       [tf.firewall[this.engine]]: {
-        ['firewall' + this.lab]: {
-          name: 'firewall' + this.lab,
-          network: 'net' + this.lab,
+        ['fw-ssh-' + this.lab]: {
+          name: 'fw-ssh-' + this.lab,
+          network: '${' + this.networkTfVar + '.name}',
           allow: [
             {protocol: 'icmp'},
             {protocol: 'tcp', ports: ['22']}
           ],
-          source_ranges: ['0.0.0.0/8'] // À quoi sert ça ?
+          source_ranges: ['0.0.0.0/0']
         }
       }
     })
@@ -150,12 +202,12 @@ class Terraform {
     if (!conf.resource) {
       conf.resource = []
     }
-    let name = 'subnet' + this.lab + '-' + id
+    let name = 'subnet-' + this.lab + '-' + id
     conf.resource.push({
       [tf.firewall[this.engine]]: {
-        ['default-allow-internal-' + name]: {
-          name: 'default-allow-internal-' + name,
-          network: 'net' + this.lab,
+        ['fw-internal-' + name]: {
+          name: 'fw-internal-' + name,
+          network: '${' + this.networkTfVar + '.name}',
           allow: [
             {protocol: 'icmp'},
             {protocol: 'tcp', ports: ['0-65535']},
@@ -168,12 +220,6 @@ class Terraform {
     })
   }
 
-  genServiceAccountScope (conf) {
-    conf.service_account = {
-      scopes: ['userinfo-email', 'compute-ro', 'storage-ro']
-    }
-  }
-
   genInstance (conf, id, instance, cpt) {
     if (!conf.resource) {
       conf.resource = []
@@ -183,23 +229,49 @@ class Terraform {
       metadataFlag = 'windows-startup-script-ps1'
     }
 
+    debug('instance', instance)
+
+    if (!instance.machineType) {
+      throw new Error('no machine type')
+    }
+    if (!instance.image) {
+      throw new Error('no image name')
+    }
+    let script = ''
+    if (!instance.commands && (!instance.packages || instance.packages.length <= 0)) {
+      throw new Error('no script')
+    }
+
+    if (instance.packages) {
+      for (let i = 0; i < instance.packages.length; i++) {
+        script += instance.packages[i].command + '\n'
+      }
+    }
+
+    script += instance.commands + '\n'
+
+    let machineName = 'eleve-' + this.lab + '-' + id + '-' + cpt
+    debug('machine type', instance.machineType, tf.cores[this.engine][instance.machineType])
     conf.resource.push({
       [tf.instance[this.engine]]: {
-        ['eleve-' + this.lab + '-' + id + '-' + cpt]: {
-          name: 'eleve-' + this.lab + '-' + id + '-' + cpt,
-          machine_type: tf.cores[this.engine][instance.machine_type],
+        [machineName]: {
+          name: machineName,
+          machine_type: tf.cores[this.engine][instance.machineType],
           zone: tf.zones[this.engine][currentZone],
-          tags: ['subnet' + this.lab + '-' + id],
+          tags: ['subnet-' + this.lab + '-' + id],
           disk: {
             image: tf.images[this.engine][instance.image]
           },
           network_interface: {
-            subnetwork: 'subnet' + this.lab + '-' + id,
+            subnetwork: this.getSubnetworkName(id),
             address: this.getIp(id, cpt),
             access_config: {}
           },
           metadata: {
-            [metadataFlag]: instance.script
+            [metadataFlag]: script
+          },
+          service_account: {
+            scopes: ['userinfo-email', 'compute-ro', 'storage-ro']
           }
         }
       }
@@ -239,15 +311,15 @@ class Terraform {
   genGuacamoleAuthorize (content, id, user, params) {
     let authorize = {
       '$': {
-        'username': user.username,
+        'username': user.email,
         'password': user.password
       },
       connection: []
     }
 
-    for (let j = 0; j < this.instances.length; j++) {
+    for (let j = 0; j < this.machines.length; j++) {
       let name = id + '-' + j
-      let inst = this.instances[j]
+      let inst = this.machines[j]
       if (inst.windows) {
         authorize.connection.push(this.genGuacamoleConnection('rdp', name, params[j]))
       } else if (inst.linux && inst.gui) {
@@ -260,12 +332,8 @@ class Terraform {
     content['user-mapping']['authorize'].push(authorize)
   }
 
-  genGuacamoleUserMapping (users, instances) {
-    let content = {}
-
-    content['user-mapping'] = {'authorize': []}
-
-    return content
+  genGuacamoleUserMapping () {
+    return {'user-mapping': {authorize: []}}
   }
 
   genXml (content) {

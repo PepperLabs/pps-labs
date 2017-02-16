@@ -20,6 +20,8 @@ const MachineSchema = new Schema({
   name: {type: String, required: true},
   pathes: [String],
   machineType: {type: String, required: true},
+  image: {type: String, required: true},
+  gui: {type: Boolean, default: false},
   packages: [PackageSchema],
   commands: String
 })
@@ -29,6 +31,7 @@ MachineSchema.methods.copy = function (body) {
   this.name = body.name
   this.pathes = body.pathes
   this.machineType = body.machineType
+  this.image = body.image
   this.packages = body.packages
   this.commands = body.commands
 }

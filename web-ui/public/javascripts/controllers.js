@@ -41,60 +41,91 @@ angular.module('app')
   }
 ])
 
-.controller('PackagesCtrl', ['$scope', '$rootScope', '$stateParams',
+.controller('MachineTypeCtrl', ['$scope', '$rootScope', '$stateParams',
   function ($scope, $rootScope, $stateParams) {
-    $scope.packagesLinux = [
-      {
-        name: 'Node.js',
-        selected: false,
-        command: 'curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash - && apt-get -y install nodejs build-essential'
-      },
-      {
-        name: 'Eclipse IDE',
-        selected: false,
-        command: 'apt-get -y install eclipse'
-      },
-      {
-        name: 'Sublime Text',
-        selected: false,
-        command: 'wget http://sublime.com/sublime.tar.gz'
-      },
-      {
-        name: 'Codeblocks',
-        selected: false,
-        command: 'apt-get -y install codeblocks'
-      }
-    ]
+    $scope.machineTypes = ['micro', 'small', 'standard']
+  }])
 
-    function setPkgSelected (output, input) {
-      for (var j = 0; j < output.length; j++) {
-        output[j].selected = false
-        for (var k = 0; k < input.length; k++) {
-          if (output[j].name === input[k].name) {
-            console.log('modified', output[j].name)
-            output[j].selected = true
-          }
+.controller('ImageCtrl', ['$scope', function ($scope) {
+  $scope.images = [{
+    name: 'windows-server-2008',
+    description: 'Windows Server 2008',
+    type: 'windows'
+  }, {
+    name: 'windows-server-2012',
+    description: 'Windows Server 2012',
+    type: 'windows'
+  }, {
+    name: 'windows-server-2016',
+    description: 'Windows Server 2016',
+    type: 'windows'
+  }, {
+    name: 'ubuntu-16.10',
+    description: 'Ubuntu 16.10',
+    type: 'linux'
+  }, {
+    name: 'debian-8',
+    description: 'Debian 8',
+    type: 'linux'
+  }]
+}])
+
+.controller('PackagesCtrl', ['$scope', function ($scope) {
+  $scope.packages = [{
+    name: 'Node.js',
+    selected: false,
+    command: 'curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash - && apt-get -y install nodejs build-essential',
+    type: 'linux'
+  }, {
+    name: 'Eclipse IDE',
+    selected: false,
+    command: 'apt-get -y install eclipse',
+    type: 'linux'
+  }, {
+    name: 'Codeblocks',
+    selected: false,
+    command: 'apt-get -y install codeblocks',
+    type: 'linux'
+  }, {
+    name: 'MongoDB',
+    selected: false,
+    command: '',
+    type: 'windows'
+  }, {
+    name: 'Codeblocks',
+    selected: false,
+    command: '',
+    type: 'windows'
+  }]
+
+  function setPkgSelected (output, input) {
+    for (var j = 0; j < output.length; j++) {
+      output[j].selected = false
+      for (var k = 0; k < input.length; k++) {
+        if (output[j].name === input[k].name) {
+          console.log('modified', output[j].name)
+          output[j].selected = true
         }
       }
-    }
-
-    $scope.editPkgs = function () {
-      $scope.tpl.packages = []
-      for (var i = 0; i < $scope.packagesLinux.length; i++) {
-        if ($scope.packagesLinux[i].selected) {
-          $scope.tpl.packages.push({
-            name: $scope.packagesLinux[i].name,
-            command: $scope.packagesLinux[i].command
-          })
-        }
-      }
-    }
-
-    if ($scope.model) {
-      setPkgSelected($scope.packagesLinux, $scope.tpl.packages)
     }
   }
-])
+
+  $scope.editPkgs = function () {
+    $scope.tpl.packages = []
+    for (var i = 0; i < $scope.packages.length; i++) {
+      if ($scope.packages[i].selected) {
+        $scope.tpl.packages.push({
+          name: $scope.packages[i].name,
+          command: $scope.packages[i].command
+        })
+      }
+    }
+  }
+
+  if ($scope.model) {
+    setPkgSelected($scope.packages, $scope.tpl.packages)
+  }
+}])
 
 .controller('FilesCtrl', ['$scope', '$rootScope', '$stateParams',
   function ($scope, $rootScope, $stateParams) {
@@ -148,6 +179,7 @@ angular.module('app')
 
 .controller('EditModelCtrl', ['$scope', '$rootScope', '$stateParams', '$uibModalInstance', '$http',
   function ($scope, $rootScope, $stateParams, $uibModalInstance, $http) {
+    $scope.family = ''
     $scope.editError = []
     $scope.pathes = []
     $scope.newPath = ''
@@ -158,8 +190,11 @@ angular.module('app')
         is_template: true,
         name: '',
         pathes: [],
-        machineType: 'ubuntu-16.10',
-        packages: []
+        machineType: '',
+        image: '',
+        gui: false,
+        packages: [],
+        commands: ''
       }
     }
 
@@ -171,6 +206,8 @@ angular.module('app')
       $scope.tpl = newTpl()
     } else {
       $scope.tpl = $scope.model
+      console.log('tpl', $scope.tpl)
+      $scope.family = $scope.tpl.image.indexOf('windows') !== -1 ? 'windows' : 'linux'
     }
 
     $scope.editResource = function (edit) {
@@ -179,6 +216,10 @@ angular.module('app')
 
     $scope.ok = function () {
       $uibModalInstance.close()
+    }
+
+    $scope.setFamily = function (family) {
+      $scope.family = family
     }
 
     $scope.saveTemplate = function () {
@@ -323,8 +364,19 @@ angular.module('app')
         $scope.ev = response.data
       })
     }
+
     $scope.cancel = function () {
       $state.transitionTo('main.labs')
+    }
+
+    $scope.startLab = function () {
+      $http({
+        method: 'POST',
+        url: '/labs/lab/start/' + $scope.ev.lab._id.toString()
+      })
+      .then(function (response) {
+        console.log('response', response.data)
+      })
     }
   }
 ])
