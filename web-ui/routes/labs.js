@@ -11,7 +11,8 @@ const ObjectId = mongoose.Types.ObjectId
 const Terraform = require('../libs/terraform')
 const debug = require('debug')('pps:labs')
 const globals = require('platform-globals')
-
+const path = require('path')
+const fs = require('fs')
 const livingInstances = []
 
 router.get('/event', utils.hasToBeConnected, getEvents)
@@ -20,6 +21,7 @@ router.get('/template/lab', utils.hasToBeConnected, getLabsTemplates)
 router.get('/template/machine', utils.hasToBeConnected, getMachinesTemplates)
 router.post('/template/machine', utils.hasToBeConnected, newMachineTemplate)
 router.put('/template/machine', utils.hasToBeConnected, editMachineTemplate)
+router.get('/packages', utils.hasToBeConnected, getPackages)
 router.post('/lab/start/:resourceId', function (req, res, next) {
   if (!ObjectId.isValid(req.params.resourceId)) {
     return next('route')
@@ -38,6 +40,61 @@ const COURSE_STUDENT = 'COURSE_STUDENT'
 const COURSE_TEACHER = 'COURSE_TEACHER'
 const ROLE_GROUP_PROJECT_STUDENT = 'ROLE_GROUP_PROJECT_STUDENT'
 const ROLE_GROUP_PROJECT_TEACHER = 'ROLE_GROUP_PROJECT_TEACHER'
+
+function getPackages (req, res, next) {
+  let packages = []
+  let files = 0
+  let windows = path.join(__dirname, '../scripts/install/windows-server')
+  let linux = path.join(__dirname, '../scripts/install/linux')
+  fs.readdir(windows, (err, filenames) => {
+    if (err) {
+      debug('error', err)
+      return
+    }
+    files += filenames.length - 1
+    filenames.forEach((filename) => {
+      fs.readFile(path.join(windows, filename), 'utf-8', (err, content) => {
+        if (err) {
+          debug('error', err)
+          return
+        }
+        files--
+        packages.push({
+          name: filename,
+          command: content,
+          type: 'windows'
+        })
+        if (files === 0) {
+          res.json(packages)
+        }
+      })
+    })
+  })
+  fs.readdir(linux, (err, filenames) => {
+    if (err) {
+      debug('error', err)
+      return
+    }
+    files += filenames.length - 1
+    filenames.forEach((filename) => {
+      fs.readFile(path.join(linux, filename), 'utf-8', (err, content) => {
+        if (err) {
+          debug('error', err)
+          return
+        }
+        files--
+        packages.push({
+          name: filename,
+          command: content,
+          type: 'linux'
+        })
+        if (files === 0) {
+          res.json(packages)
+        }
+      })
+    })
+  })
+}
 
 function getEvents (req, res, next) {
   let _groups
@@ -85,6 +142,11 @@ function getEvents (req, res, next) {
       for (let j = 0; j < _courses.length; j++) {
         if (_labsIdsRef[_courses[j]._id.toString()] === labs[i]._id.toString()) {
           _courses[j].lab = labs[i]
+          for (let k = 0; k < livingInstances.length; k++) {
+            if (utils.equalIds(livingInstances[k]._resource, labs[i]._id)) {
+              _courses[j].lab.guacamoleIp = livingInstances[k].guacIp
+            }
+          }
         }
       }
     }
@@ -223,6 +285,11 @@ function stopLab (req, res, next) {
       machines: _lab.networks[0].machines,
       networkPrefix: globals.GCE.network
     })
+    for (let i = 0; i < livingInstances.length; i++) {
+      if (utils.equalIds(livingInstances[i]._resource, req.params.resourceId)) {
+        livingInstances.splice(i, 1)
+      }
+    }
     return res.send('OK')
   })
   .then(() => {
@@ -281,6 +348,9 @@ function startLab (req, res, next) {
   })
   .then(() => {
     return _tf.apply()
+  })
+  .then((guacIp) => {
+    return livingInstances.push({guacIp: guacIp, _resource: req.params.resourceId})
   })
   .catch(next)
 }

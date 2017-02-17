@@ -1,0 +1,1 @@
+apt-get -y install mongodb-server mongodb-client

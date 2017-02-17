@@ -22,5 +22,8 @@ LabActivitySchema.methods.copy = function (body) {
   this.is_template = body.is_template
   this.networks = body.networks
 }
+LabActivitySchema.virtual('guacamoleIp')
+  .get(function () { return this._guacamoleIp })
+  .set(function (elem) { return this._guacamoleIp = elem})
 
 module.exports = Resource.discriminator('LabActivity', LabActivitySchema)

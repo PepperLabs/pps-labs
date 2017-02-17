@@ -1,6 +1,8 @@
-sudo su
+sudo su -
 
 apt-get update || echo "apt-get update" >> /install_log
+
+mkdir -p /root && cd /root
 
 ##librairie necessaires
 apt-get --yes --force-yes install automake autoconf libtool libcairo2-dev libpng-dev libossp-uuid-dev \
@@ -74,11 +76,11 @@ sleep 2m && service jetty8 restart || echo "jetty8 restart \n" >> /install-log
 ##recuperation des fichiers et creation des liens symboliques necessaires
 mkdir -p /usr/lib/x86_64-linux-gnu/freerdp/ || echo "mkdir -p freerdp \n" >> /install-log
 
-lien1=$(find / -name guacdr-client.so | grep -v home)
-lien2=$(find / -name guacsnd-client.so | grep -v home)
+lien1=$(find / -name guacdr-client.so | grep -v root)
+lien2=$(find / -name guacsnd-client.so | grep -v root)
 
 ln -s $lien1 /usr/lib/x86_64-linux-gnu/freerdp/guacdr-client.so || echo "ln -s cdr \n" >> /install-log
-ln -s $lien1 /usr/lib/x86_64-linux-gnu/freerdp/guacsnd-client.so || echo "ln -s snd \n" >> /install-log
+ln -s $lien2 /usr/lib/x86_64-linux-gnu/freerdp/guacsnd-client.so || echo "ln -s snd \n" >> /install-log
 
 
 

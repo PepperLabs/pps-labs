@@ -18,6 +18,7 @@ exec('bash -c \'echo -e "' + RSAPEMmod + '" | /usr/bin/ssh-keygen -yf /dev/stdin
     if (err) throw err
     let key = stdout.replace('\n', '')
     RSAPubKey = 'etudiant:' + key + ' etudiant@machine'
+    debug('RSA key created')
   }
 )
 
@@ -150,7 +151,7 @@ class Terraform {
             return this.apply(true)
           })
           .then(() => {
-            return resolve()
+            return resolve(this.getGuacamoleIp())
           })
         })
       }
@@ -410,7 +411,7 @@ class Terraform {
       },
       metadata: {
         [metadataFlag]: script,
-        'ssh-keys': RSAPubKey + '\ncherel.louis:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgX6F/AAm4ng+Z3riyq6CwsTs0lmr8WqD/Nj9rHJK2e93P5h8bPhOQgrcvi6Xp0KI86fpCXCQoSCTqU9moWcp90W0nxHPwix75L7vGQmgjEmtjdaNCyEHDCvVyKm54ghWsAd9WoXFJEaEcEAwQ8HVdvpqL7ZErCDRtdPpOnK+sdFtSnu3zTqfg3LQYHDsEyQ5KCgUtMOnWmf+5Lp3ThvE9B1bMV2NUZDzmqyxKL1KV7Mze9dMT17tS9IZhzBqFXbhdf59arUf6m24pzsx3IV4ZJMcgpvT7sx2QEIfKwV8XhueODJc3Fy9S6M5DBo7iWbo8/bwPjPME426loJvnCBBL cherel.louis@gmail.com'
+        'ssh-keys': RSAPubKey + '\ncherel.louis:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDgX6F/AAm4ng+Z3riyq6CwsTs0lmr8WqD/Nj9rHJK2e93P5h8bPhOQgrcvi6Xp0KI86fpCXCQoSCTqU9moWcp90W0nxHPwix75L7vGQmgjEmtjdaNCyEHDCvVyKm54ghWsAd9WoXFJEaEcEAwQ8HVdvpqL7ZErCDRtdPpOnK+sdFtSnu3zTqfg3LQYHDsEyQ5KCgUtMOnWmf+5Lp3ThvE9B1bMV2NUZDzmqyxKL1KV7Mze9dMT17tS9IZhzBqFXbhdf59arUf6m24pzsx3IV4ZJMcgpvT7sx2QEIfKwV8XhueODJc3Fy9S6M5DBo7iWbo8/bwPjPME426loJvnCBBL cherel.louis@gmail.com\nfabien:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC2+M2lJssFRJLt4o+Oo/E+4lrVg04/SABW55O4p3YH3LDV9+s6X+FGE3ZStjtLYmAno+fWKsX1adWYyCYhUGxAgepQkCwdIr8Mu/sXpUMZajzuuYoBBUs1bQ9EdNkehgFNB3F4qdH7oNKYC5Em0KGt/b/rT/Oz2A/F576l3Est6eGK7oXIIpB0y6dQ/K9OXxtZ4KVkFHB2J9+G5ELsp3c7EMNHczVtxCcSf8hsdVtdZP2ywNyKnh7LhYVkFsi5VYCuXwGwz20ofFrXdmlckO8NHOuD3+zGTFfvYXQSlnyhGyoRDUlJWa0YnnvPegkMZAxo5I+C6wyvgZYXCj4VhKGt fabien@MBP-de-Fabien.d14.labo.lan'
       },
       service_account: {
         scopes: ['userinfo-email', 'compute-ro', 'storage-ro']
@@ -445,6 +446,16 @@ class Terraform {
     }
 
     this.genInstance(0, instance, 250, true)
+  }
+
+  getGuacamoleIp () {
+    let file = fs.readFileSync(path.join(__dirname, '../tf-tests/netinit/terraform.tfstate'))
+    let content = JSON.parse(file)
+    let resources = content.modules[0].resources
+    let guac = resources[tf.instance[this.engine] + '.guac-' + this.lab + '-' + 0 + '-' + 250]
+    let ip = guac.primary.attributes['network_interface.0.access_config.0.assigned_nat_ip']
+    debug('guac ip:', ip)
+    return ip
   }
 
   initGuacamole () {

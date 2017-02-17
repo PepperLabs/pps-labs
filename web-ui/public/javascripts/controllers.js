@@ -70,33 +70,45 @@ angular.module('app')
   }]
 }])
 
-.controller('PackagesCtrl', ['$scope', function ($scope) {
-  $scope.packages = [{
-    name: 'Node.js',
-    selected: false,
-    command: 'curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash - && apt-get -y install nodejs build-essential',
-    type: 'linux'
-  }, {
-    name: 'Eclipse IDE',
-    selected: false,
-    command: 'apt-get -y install eclipse',
-    type: 'linux'
-  }, {
-    name: 'Codeblocks',
-    selected: false,
-    command: 'apt-get -y install codeblocks',
-    type: 'linux'
-  }, {
-    name: 'MongoDB',
-    selected: false,
-    command: '',
-    type: 'windows'
-  }, {
-    name: 'Codeblocks',
-    selected: false,
-    command: '',
-    type: 'windows'
-  }]
+.controller('PackagesCtrl', ['$scope', '$http', function ($scope, $http) {
+  $http({
+    method: 'GET',
+    url: '/labs/packages'
+  })
+  .then(function (response) {
+    $scope.packages = response.data
+    /*
+     [{
+      name: 'Node.js',
+      selected: false,
+      command: 'curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash - && apt-get -y install nodejs build-essential',
+      type: 'linux'
+    }, {
+      name: 'Eclipse IDE',
+      selected: false,
+      command: 'apt-get -y install eclipse',
+      type: 'linux'
+    }, {
+      name: 'Codeblocks',
+      selected: false,
+      command: 'apt-get -y install codeblocks',
+      type: 'linux'
+    }, {
+      name: 'MongoDB',
+      selected: false,
+      command: '',
+      type: 'windows'
+    }, {
+      name: 'Codeblocks',
+      selected: false,
+      command: '',
+      type: 'windows'
+    }]
+     */
+    if ($scope.model) {
+      setPkgSelected($scope.packages, $scope.tpl.packages)
+    }
+  })
 
   function setPkgSelected (output, input) {
     for (var j = 0; j < output.length; j++) {
@@ -120,10 +132,6 @@ angular.module('app')
         })
       }
     }
-  }
-
-  if ($scope.model) {
-    setPkgSelected($scope.packages, $scope.tpl.packages)
   }
 }])
 
