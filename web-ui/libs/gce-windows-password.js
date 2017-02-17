@@ -4,8 +4,8 @@ const gce = require('@google-cloud/compute')
 /**
   Get a compute object for communicating with the Compute Engine API.
   **/
-function getCompute (projectId, keyFilename) {
-  return gce({projectId, keyFilename})
+function getCompute (projectId, credentials) {
+  return gce({projectId, credentials})
 }
 
 /**
@@ -28,12 +28,13 @@ function getInstanceData (vm) {
 /**
   Get an RSA key for encryption.
   **/
+/*
 function getKey () {
   const key = new RSA().generateKeyPair()
 
   return key
 }
-
+*/
 /**
   Convert Int to base64 string
   **/
@@ -211,10 +212,10 @@ function decryptPassword (encryptedPassword, key) {
   return password
 }
 
-function newWindowsPassword ({instance, zone, project, user, email, keyFilename}) {
+function newWindowsPassword ({instance, zone, project, user, email, credentials, RSAKey}) {
   // Setup
-  const compute = getCompute(project, keyFilename)
-  const key = getKey()
+  const compute = getCompute(project, credentials)
+  const key = RSAKey
   const {modulus, exponent} = getModulusExponentInBase64(key)
 
   // Get existing metadata
@@ -234,8 +235,6 @@ function newWindowsPassword ({instance, zone, project, user, email, keyFilename}
   .then(() => getEncryptedPasswordFromSerialPort(vm, modulus))
   .then((encryptedPassword) => decryptPassword(encryptedPassword, key))
   .then((password) => {
-    console.log('username: ', user)
-    console.log('password: ', password)
     return {username: user, password}
   })
 }

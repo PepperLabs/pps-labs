@@ -378,6 +378,15 @@ angular.module('app')
         console.log('response', response.data)
       })
     }
+    $scope.stopLab = function () {
+      $http({
+        method: 'POST',
+        url: '/labs/lab/stop/' + $scope.ev.lab._id.toString()
+      })
+      .then(function (response) {
+        console.log('response', response.data)
+      })
+    }
   }
 ])
 

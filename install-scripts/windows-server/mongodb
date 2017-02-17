@@ -1,21 +1,17 @@
-metadata{
-	windows-startup-script-ps1 = <<SCRIPT
-	$url = "http://downloads.mongodb.org/win32/mongodb-win32-x86_64-2008plus-ssl-latest-signed.msi"
-	$output = "c:\mongodb-win32-x86_64-2008plus-ssl-latest-signed.msi"
-	(New-Object System.Net.WebClient).DownloadFile($url, $output)
-	New-Item c:\data\db -type directory
-	Start-Process C:\Windows\System32\msiexec.exe -ArgumentList "/i $output /qn" -Wait
-	$mongod = Get-ChildItem -Path "c:\Program Files\MongoDB\" -Filter mongod.exe -Recurse -ErrorAction SilentlyContinue -Force | % { $_.FullName }
-	$ShortcutFile = "$env:Public\Desktop\MongoServer.lnk"
-	$WScriptShell = New-Object -ComObject WScript.Shell
-	$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
-	$Shortcut.TargetPath = $mongod
-	$Shortcut.Save()
-	$mongo = Get-ChildItem -Path "c:\Program Files\MongoDB\" -Filter mongo.exe -Recurse -ErrorAction SilentlyContinue -Force | % { $_.FullName }
-	$ShortcutFile = "$env:Public\Desktop\MongoClient.lnk"
-	$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
-	$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
-	$Shortcut.TargetPath = $mongo
-	$Shortcut.Save()
-	SCRIPT
-}
+$url = "http://downloads.mongodb.org/win32/mongodb-win32-x86_64-2008plus-ssl-latest-signed.msi"
+$output = "c:\mongodb-win32-x86_64-2008plus-ssl-latest-signed.msi"
+(New-Object System.Net.WebClient).DownloadFile($url, $output)
+New-Item c:\data\db -type directory
+Start-Process C:\Windows\System32\msiexec.exe -ArgumentList "/i $output /qn" -Wait
+$mongod = Get-ChildItem -Path "c:\Program Files\MongoDB\" -Filter mongod.exe -Recurse -ErrorAction SilentlyContinue -Force | % { $_.FullName }
+$ShortcutFile = "$env:Public\Desktop\MongoServer.lnk"
+$WScriptShell = New-Object -ComObject WScript.Shell
+$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
+$Shortcut.TargetPath = $mongod
+$Shortcut.Save()
+$mongo = Get-ChildItem -Path "c:\Program Files\MongoDB\" -Filter mongo.exe -Recurse -ErrorAction SilentlyContinue -Force | % { $_.FullName }
+$ShortcutFile = "$env:Public\Desktop\MongoClient.lnk"
+$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
+$Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
+$Shortcut.TargetPath = $mongo
+$Shortcut.Save()

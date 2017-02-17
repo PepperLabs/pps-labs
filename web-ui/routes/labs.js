@@ -2,15 +2,17 @@
 const router = require('express').Router()
 const utils = require('pps-utils')
 const mongoose = require('mongoose')
-const User = mongoose.model('User')
 const Course = mongoose.model('CourseActivity')
 const Group = mongoose.model('Group')
+const User = mongoose.model('User')
 const LabActivity = mongoose.model('LabActivity')
 const Machine = mongoose.model('Machine')
 const ObjectId = mongoose.Types.ObjectId
-const Terraform = require('./terraform')
+const Terraform = require('../libs/terraform')
 const debug = require('debug')('pps:labs')
 const globals = require('platform-globals')
+
+const livingInstances = []
 
 router.get('/event', utils.hasToBeConnected, getEvents)
 router.put('/event', utils.hasToBeConnected, editEvent)
@@ -24,6 +26,13 @@ router.post('/lab/start/:resourceId', function (req, res, next) {
   }
   next()
 }, utils.hasToBeConnected, startLab)
+
+router.post('/lab/stop/:resourceId', function (req, res, next) {
+  if (!ObjectId.isValid(req.params.resourceId)) {
+    return next('route')
+  }
+  next()
+}, utils.hasToBeConnected, stopLab)
 
 const COURSE_STUDENT = 'COURSE_STUDENT'
 const COURSE_TEACHER = 'COURSE_TEACHER'
@@ -186,8 +195,8 @@ function getMachinesTemplates (req, res, next) {
   .catch(next)
 }
 
-function startLab (req, res, next) {
-  let _lab, _tf//, _users
+function stopLab (req, res, next) {
+  let _lab, _tf
   LabActivity.findById_(req.params.resourceId)
   .then((lab) => {
     _lab = lab
@@ -214,14 +223,64 @@ function startLab (req, res, next) {
       machines: _lab.networks[0].machines,
       networkPrefix: globals.GCE.network
     })
+    return res.send('OK')
+  })
+  .then(() => {
+    return _tf.destroy()
+  })
+  .catch(next)
+}
 
+function startLab (req, res, next) {
+  let _lab, _tf
+  LabActivity.findById_(req.params.resourceId)
+  .then((lab) => {
+    _lab = lab
+    return lab.fillExternalElements()
+  })
+  .then(() => {
+    let groupIds = []
+    for (let i = 0; i < _lab.external_relations.length; i++) {
+      if (_lab.external_relations[i].name === ROLE_GROUP_PROJECT_STUDENT &&
+        utils.isActive(_lab.external_relations[i])) {
+        groupIds.push(_lab.external_relations[i]._resource)
+      }
+    }
+    return Group.find_({_id: {$in: groupIds}}).exec()
+  })
+  .then((groups) => {
+    let userIds = []
+    for (let i = 0; i < groups.length; i++) {
+      for (let j = 0; j < groups[i].members.length; j++) {
+        if (utils.isActive(groups[i].members[j].activation_dates)) {
+          userIds.push(groups[i].members[j]._resource)
+        }
+      }
+    }
+    return User.find_({_id: {$in: userIds}}).exec()
+  })
+  .then((users) => {
+    debug('users', users)
+    // return res.send('OK')
+    _tf = new Terraform({
+      engine: 'gce',
+      credentials: globals.GCE.credentials,
+      project: globals.GCE.project,
+      lab: _lab.name,
+      users: users,
+      machines: _lab.networks[0].machines,
+      networkPrefix: globals.GCE.network
+    })
+    return Promise.resolve()
+  })
+  .then(() => {
+    return res.send('OK')
+  })
+  .then(() => {
     return _tf.initLab()
   })
   .then(() => {
     return _tf.apply()
-  })
-  .then(() => {
-    return res.send('OK')
   })
   .catch(next)
 }
