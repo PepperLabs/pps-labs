@@ -210,7 +210,7 @@ function editEvent (req, res, next) {
   })
   .then(() => {
     _course.lab = _lab
-    res.json(_course.sendSafe())
+    res.json(_course.sendSafe(req))
   })
   .catch(next)
 }
